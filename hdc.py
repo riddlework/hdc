@@ -29,7 +29,7 @@ class HDC:
     @classmethod
     def bundle(cls,xs):
         # if entry = thr, entry = 0 always
-        return (np.sum(xs,axis=0) < (len(xs)/2)).astype(int)
+        return (np.sum(xs,axis=0) > (len(xs)/2)).astype(int)
           
     @classmethod
     def permute(cls,x,i):
@@ -67,7 +67,7 @@ class HDItemMem:
     
     def matches(self,query, thr=0.49):
         dists = self.distance(query)
-        return [key for key,val in dists.items() if val <= thr]
+        return {key: val for key,val in dists.items() if val <= thr}
         
 
 # a codebook is simply an item memory that always creates a random hypervector
