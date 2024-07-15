@@ -130,6 +130,6 @@ def test_generative_model():
 
 
 if __name__ == '__main__':
-    #test_encoding()
-    #test_classifier()
+    test_encoding()
+    test_classifier()
     test_generative_model()

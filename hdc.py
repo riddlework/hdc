@@ -24,7 +24,7 @@ class HDC:
 
     @classmethod
     def bind_all(cls, xs):
-        return reduce(bind,xs)
+        return reduce(HDC.bind,xs)
 
     @classmethod
     def bundle(cls,xs):
@@ -79,7 +79,6 @@ class HDCodebook(HDItemMem):
 
     def add(self,key):
         self.item_mem[key] = HDC.rand_vec()
-
     
 
 def make_letter_hvs():
