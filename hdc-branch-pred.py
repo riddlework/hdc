@@ -14,6 +14,7 @@ class branchPredictor:
         self.decisions.add("y")
         self.decisions.add("n")
         #print(HDC.dist(self.decisions.get("y"),self.decisions.get("n")))
+
     
 
     # takes a list of decisions and returns a list of their representative hypervectors
@@ -41,8 +42,14 @@ class branchPredictor:
 
         # create list of bound k-grams
         grams = []
-        for i in range(len(history_vecs)-self.k+1):
-            grams.append(self.encode_run(history_vecs[i:i+self.k]))
+        unique_runs = []
+        for i in range(len(history_vecs)-self.k+1): 
+            string_run = history[i:i+self.k]
+            vec_run = history_vecs[i:i+self.k]
+
+            if "".join(string_run) not in unique_runs: 
+                unique_runs.append("".join(string_run))
+                grams.append(self.encode_run(vec_run))
 
         # bundle together and return 
         return HDC.bundle(grams)
@@ -158,16 +165,10 @@ def test_predictor(history,predictor):
     print(f"ACCURACY: {accuracy}")
         
 
-def main():
-    # initialize k-gram size
-    k = 3
-
-    # initialize data
-    history,predictor = initialize(k)
-
+def testing(predictor):
     # y y n history
     # y y query
-    # return n
+    # should return n
 
     #history = ["y","y","n"]
     #reverse_history = ["n","y","y"] 
@@ -196,19 +197,21 @@ def main():
     #print(predictor.decisions.distance(hv_qh))
 
     #print(f"{predictor.decisions.wta(HDC.bind(history_hv,query_hv))}")
-    
+    return
 
-    
 
-    
+def main():
+    # initialize k-gram size
+    k = 3
+
+    # initialize data
+    history,predictor = initialize(k)
+
+    # debugging/testing code
+    testing(predictor)
 
     # test predictor
     test_predictor(history,predictor)
-
-
-
-
-
 
 
 if __name__ == "__main__":
