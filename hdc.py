@@ -9,6 +9,7 @@ from functools import reduce
 
 class HDC:
     SIZE = 10000
+    np.random.seed(0)
 
     @classmethod
     def rand_vec(cls):
