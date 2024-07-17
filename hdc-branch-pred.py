@@ -13,7 +13,9 @@ class branchPredictor:
         self.decisions = HDCodebook()
         self.decisions.add("y")
         self.decisions.add("n")
+        print(HDC.dist(self.decisions.get("y"),self.decisions.get("n")))
     
+
     def make_history_vecs(self,history):
         return [self.decisions.get(decision) for decision in history]
 
@@ -33,6 +35,7 @@ class branchPredictor:
         # create list of bound k-grams
         grams = []
         for i in range(len(history_vecs)-self.k+1):
+            print("here: {i}")
             grams.append(self.encode_run(history_vecs[i:i+self.k]))
 
         # bundle together and return 
@@ -62,9 +65,20 @@ def initialize(k=3):
     HDC.SIZE = 10000
 
     decisions = []
-    with open("dataset.txt","r") as csv_file:
+    with open("4102b9-dataset.txt","r") as csv_file:
         csv_reader = csv.DictReader(csv_file)
-        decisions = [row["decision"] for row in csv_reader]
+
+        num_yes = 0
+        decisions = []
+        for row in csv_reader:
+            decisions.append(row["decision"])
+            if row["decision"] == "y":
+                num_yes += 1
+            if len(decisions) >= 2500:
+                break
+        
+        print(f"num_yes: {num_yes}")
+        #decisions = [row["decision"] for row in csv_reader]
         
     # reverse decision array to get most recent decisions first
     decisions.reverse()
@@ -80,28 +94,55 @@ def test_predictor(history,predictor):
 
     print("======= testing predictor ======")
     correct, idx = 0, 0
+
+    # count results
+    num_correct_positives = 0
+    num_correct_negatives = 0
+    num_false_positives = 0
+    num_false_negatives = 0
     
     for item in (pbar := tqdm.tqdm(history)):
 
-        # initialize history/query vectors
-        history_hv = HDC.rand_vec()
-        query_hv = HDC.rand_vec()
+        # if history is not long enough for k-gram, make random prediction
+        if idx < predictor.k:
+            rand_num = np.random.rand()
+            if rand_num < 0.5:
+                prediction = "y"
+            else:
+                prediction = "n"
 
-        # if history is long enough, encode history and make query
-        if idx >= predictor.k:
+        # otherwise, make prediction based on history
+        else:
+            # make history and query vectors
             history_hv = predictor.encode_history(history[:idx])  
             query_hv = predictor.make_query(history[:idx])
-
-        # generate prediction and compare to actual 
-        prediction = predictor.predict(history_hv,query_hv)
+            
+            # generate prediction and compare to actual 
+            prediction = predictor.predict(history_hv,query_hv)
+         
+        # update accuracy using actual decision
         actual = history[idx]
 
         if prediction == actual:
             correct += 1
         idx += 1
 
+        if prediction == "y" and actual == "y":
+            num_correct_positives += 1
+        elif prediction == "y" and actual == "n":
+            num_false_positives += 1
+        elif prediction == "n" and actual == "n":
+            num_correct_negatives += 1
+        elif prediction == "n" and actual == "y":
+            num_false_negatives += 1
+
         accuracy = float(correct)/idx
         pbar.set_description("accuracy=%f" % accuracy)
+
+    print(f"num_correct_positives: {num_correct_positives}")
+    print(f"num_correct_negatives: {num_correct_negatives}")
+    print(f"num_false_positives: {num_false_positives}")
+    print(f"num_false_negatives: {num_false_negatives}")
 
     print(f"ACCURACY: {accuracy}")
         
@@ -113,14 +154,43 @@ def main():
     # initialize data
     history,predictor = initialize(k)
 
+
+    # y y n history
+    # y y query
+    # return n
+
+    history = ["y","y","n"]
+    reverse_history = history[::-1]
+
+    # make history and query vectors
+    history_vecs = []
+    for i in range(len(reverse_history)):
+        history_vec = predictor.decisions.get(reverse_history[i])
+        history_vecs.append(HDC.permute(history_vec,i))
+        print(f"reverse_history_element: {reverse_history[i]}, i: {i}")
+
+    history_hv = HDC.bind_all(history_vecs)
+
+    query = ["y","y"]
+    query_vecs = []
+    hv_y = predictor.decisions.get("y")
+    query_vecs.append(hv_y)
+    query_vecs.append(HDC.permute(hv_y,1))
+    query_hv = HDC.bind_all(query_vecs)
+
+    print(f"{predictor.decisions.wta(HDC.bind(history_hv,query_hv))}")
+    
+
+    
+
+    
+
     # test predictor
-    test_predictor(history,predictor)
-
-
-    #history = ["NT","T","T","NT","T","NT","NT"]
-    #predictor = branchPredictor(3)
-
     #test_predictor(history,predictor)
+
+
+
+
 
 
 
