@@ -14,7 +14,6 @@ class branchPredictor:
         self.decisions.add("y")
         self.decisions.add("n")
         #print(HDC.dist(self.decisions.get("y"),self.decisions.get("n")))
-
     
 
     # takes a list of decisions and returns a list of their representative hypervectors
@@ -22,14 +21,8 @@ class branchPredictor:
         return [self.decisions.get(decision) for decision in decision_list]
     
 
-    # takes a list of hypervectors and returns a list of their representative decisions
-    # for debugging purposes
-    def vec_to_list(self,vec_list):
-        return [self.decisions.wta(vec) for vec in vec_list]
-
-
+    # create k-gram
     def encode_run(self,run):
-        # create k-gram
         return HDC.bind_all([HDC.permute(run[i],i) for i in range(len(run))])
 
 
@@ -44,20 +37,16 @@ class branchPredictor:
         grams = []
         unique_runs = []
         for i in range(len(history_vecs)-self.k+1): 
-            string_run = history[i:i+self.k]
-            vec_run = history_vecs[i:i+self.k]
-
-            if "".join(string_run) not in unique_runs: 
-                unique_runs.append("".join(string_run))
-                grams.append(self.encode_run(vec_run))
+            run = history_vecs[i:i+self.k]
+            grams.append(self.encode_run(run))
 
         # bundle together and return 
         return HDC.bundle(grams)
 
 
     # assumes that history is long enough for k-gram
+    # create query vector from last k-1 items from memory
     def make_query(self,history):
-        # last k-1 items from history 
         lenh = len(history)
         query = history[lenh-self.k+1:lenh]
         #print(f"query: {query}")
@@ -73,8 +62,8 @@ class branchPredictor:
         return HDC.permute(run,1)
 
 
+    # predict next branch outcome based on current decision vector
     def predict(self,history_hv,query_hv):
-        # predict next branch outcome based on current decision vector
         return self.decisions.wta(HDC.bind(history_hv,query_hv))
 
 
@@ -165,23 +154,20 @@ def test_predictor(history,predictor):
     print(f"ACCURACY: {accuracy}")
         
 
-def testing(predictor):
+def debug_testing(predictor):
     # y y n history
     # y y query
     # should return n
 
-    #history = ["y","y","n"]
-    #reverse_history = ["n","y","y"] 
+    history = ["y","y","n"]
+    reverse_history = ["n","y","y"] 
 
-    # make history vector
-    #history_hv = predictor.encode_history(reverse_history)
-    #query_hv = predictor.make_query(reverse_history)
-
-    #history_vecs = []
-    #for i in range(len(reverse_history)):
-    #    history_vec = predictor.decisions.get(reverse_history[i])
-    #    history_vecs.append(HDC.permute(history_vec,i))
-    #    print(f"reverse_history_element: {reverse_history[i]}, i: {i}")
+    # make history vector manually
+    history_vecs = []
+    for i in range(len(reverse_history)):
+        history_vec = predictor.decisions.get(reverse_history[i])
+        history_vecs.append(HDC.permute(history_vec,i))
+        print(f"reverse_history_element: {reverse_history[i]}, i: {i}")
 
     #history_hv = HDC.bind_all(history_vecs)
 
@@ -193,6 +179,9 @@ def testing(predictor):
 #    query_hv = HDC.bind_all(query_vecs)
 #    query_hv = HDC.permute(query_hv,1)
 #
+    # make vectors using class methods
+    history_hv = predictor.encode_history(reverse_history)
+    query_hv = predictor.make_query(reverse_history)
     #hv_qh = HDC.bind(history_hv,query_hv)
     #print(predictor.decisions.distance(hv_qh))
 
@@ -207,8 +196,8 @@ def main():
     # initialize data
     history,predictor = initialize(k)
 
-    # debugging/testing code
-    testing(predictor)
+    # debugging/testing code simply
+    #debug_testing(predictor)
 
     # test predictor
     test_predictor(history,predictor)
