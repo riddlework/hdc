@@ -18,7 +18,7 @@ class branchPredictor:
 
     # takes a list of decisions and returns a list of their representative hypervectors
     def list_to_vec(self,decision_list):
-        return [self.decisions.get(decision) for decision in decision_list]
+        return np.array(self.decisions.get(decision) for decision in decision_list)
     
 
     # create gram out of given list of decision vectors 
@@ -127,6 +127,22 @@ def test_predictor(history,predictor):
         accuracy = float(correct)/idx
         pbar.set_description("accuracy=%f" % accuracy)
 
+
+    plt.plot(np.arange(len(history_vecs)),accuracies,color="red", linewidth=2.5)
+    
+    # plot accuracies
+    # remember that you can label each plot
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    ax.set_xlim(0, ax.get_xlim()[1])
+    plt.title("Branch Prediction Accuracy")
+    plt.xlabel("Number of Decisions")
+    plt.ylabel("Accuracy")
+    plt.grid(color='black', alpha=0.1)
+    
+    plt.show()
     print(f"ACCURACY: {accuracy}")
         
 
