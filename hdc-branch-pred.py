@@ -15,6 +15,9 @@ class branchPredictor:
         self.decisions = HDCodebook()
         self.decisions.add("y")
         self.decisions.add("n")
+
+    def __str__(self):
+        return "Branch Predictor"
     
 
     # takes a list of decisions and returns a list of their representative hypervectors
