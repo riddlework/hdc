@@ -1,4 +1,5 @@
 from hdc import *
+from rev_list import *
 import csv
 import tqdm
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ class branchPredictor:
 
     # takes a list of decisions and returns a list of their representative hypervectors
     def list_to_vec(self,decision_list):
-        return np.array(self.decisions.get(decision) for decision in decision_list)
+        return [self.decisions.get(decision) for decision in decision_list]
     
 
     # create gram out of given list of decision vectors 
@@ -74,7 +75,7 @@ def initialize(k=3):
         csv_reader = csv.DictReader(csv_file)
         #decisions = [row["decision"] for row in csv_reader]
 
-        decisions = []
+        decisions = RevList()
         for row in csv_reader:
             decisions.append(row["decision"])
             
@@ -84,7 +85,7 @@ def initialize(k=3):
 
     # reverse decision array to get most recent decisions first
     # TODO: re-implement so that reversal is not necessary
-    decisions.reverse()
+    #decisions.reverse()
 
     # initialize branch predictor
     predictor = branchPredictor(k)
@@ -96,12 +97,15 @@ def initialize(k=3):
 def test_predictor(history,predictor):
 
     print("======= testing predictor ======")
-    correct, idx = 0, 0
 
-    for item in (pbar := tqdm.tqdm(history)):
+    # initialize accuracy
+    correct = 0
+    accuracies = []
+
+    for i in (pbar := tqdm.tqdm(range(len(history)))):
 
         # if history is not long enough for k-gram, make random prediction
-        if idx < predictor.k:
+        if i < predictor.k:
             rand_num = np.random.rand()
             if rand_num < 0.5:
                 prediction = "y"
@@ -111,32 +115,37 @@ def test_predictor(history,predictor):
         # otherwise, make prediction based on history
         else:
             # make history and query vectors
-            history_hv = predictor.encode_history(history[:idx])  
-            query_hv = predictor.make_query(history[:idx])
+            # import pdb; pdb.set_trace()
+            history_hv = predictor.encode_history(history[0:i])  
+            query_hv = predictor.make_query(history[0:i])
             
             # generate prediction and compare to actual 
             prediction = predictor.predict(history_hv,query_hv)
          
         # update accuracy using actual decision
-        actual = history[idx]
+        actual = history[i]
 
         if prediction == actual:
             correct += 1
-        idx += 1
 
-        accuracy = float(correct)/idx
-        pbar.set_description("accuracy=%f" % accuracy)
+        if i > 0:
+            accuracy = float(correct)/i
+            accuracies.append(accuracy)
+            pbar.set_description("accuracy=%f" % accuracy)
 
 
-    plt.plot(np.arange(len(history_vecs)),accuracies,color="red", linewidth=2.5)
     
     # plot accuracies
     # remember that you can label each plot
+    plt.plot(np.arange(len(history)-1),accuracies,color="red", linewidth=2.5)
+    
+    # modify axis objects
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    
     ax.set_xlim(0, ax.get_xlim()[1])
+
+    # modify plot aesthetics 
     plt.title("Branch Prediction Accuracy")
     plt.xlabel("Number of Decisions")
     plt.ylabel("Accuracy")
@@ -183,13 +192,13 @@ def debug_testing(predictor):
 
 def main():
     # initialize k-gram size
-    k = 3
+    k = 8
 
     # initialize data
     history,predictor = initialize(k)
 
     # test predictor
-   # test_predictor(history,predictor)
+    test_predictor(history,predictor)
 
     # debugg/testing simple code 
     # debug_testing(predictor)
