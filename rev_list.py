@@ -10,13 +10,34 @@ class RevList():
 
     # reverse slice starting at the end of the list
     def __getitem__(self,key):
-        if isinstance(key,slice):
-            if key.start < 0:
-                raise ValueError("s must be >= 0")
-            if key.stop > self.len:
-                raise ValueError("e must be <= len")
 
-            return self.items[-1-key.start:-1-key.stop:-1]
+        # slicing
+        if isinstance(key,slice):
+            start = key.start
+            stop = key.stop
+            step = key.step
+           
+            # error checking
+            if start is None:
+                start = -1
+            elif start < 0:
+                raise ValueError("start must be >= 0")
+
+            if stop is None:
+                stop = -self.len
+            elif stop > self.len:
+                raise ValueError("stop must be <= len")
+
+            if step is None:
+                step = -1
+
+            return self.items[-1-start:-1-stop:step]
+
+        # indexing
+        elif isinstance(key,int):
+            if key < 0 or key >= self.len:
+                raise ValueError("index out of range")
+            return self.items[-1-key]
 
 
     def __len__(self):
