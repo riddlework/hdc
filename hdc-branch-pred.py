@@ -16,9 +16,6 @@ class branchPredictor:
         self.decisions.add("y")
         self.decisions.add("n")
 
-    def __str__(self):
-        return "Branch Predictor"
-    
 
     # takes a list of decisions and returns a list of their representative hypervectors
     def list_to_vec(self,decision_list):
@@ -74,21 +71,19 @@ def initialize(k=3):
     HDC.SIZE = 10000
 
     decisions = []
-    with open("410185-dataset.txt","r") as csv_file:
+    with open("./data/traces/410185-dataset.txt","r") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         #decisions = [row["decision"] for row in csv_reader]
 
-        decisions = RevList()
         for row in csv_reader:
             decisions.append(row["decision"])
             
             # restrict amount of computation
-            if len(decisions) >= 2500:
+            if len(decisions) >= 100:
                 break
 
     # reverse decision array to get most recent decisions first
-    # TODO: re-implement so that reversal is not necessary
-    #decisions.reverse()
+    decisions.reverse()
 
     # initialize branch predictor
     predictor = branchPredictor(k)
@@ -97,11 +92,32 @@ def initialize(k=3):
     return decisions,predictor
 
 
-def test_predictor(history,predictor):
+# test different k-gram sizes
+def test_k_gram_sizes(history,predictor,k_vals=[i for i in range(3,10)]):
 
-    print("======= testing predictor ======")
+    print("======= testing k-gram sizes ======")
 
-    # initialize accuracy
+    all_accuracies = {} 
+    for val in k_vals:
+        
+        print(f"======= testing predictor k={val} ======")
+        predictor.k = val
+        all_accuracies[val] = test_predictor(history,predictor,plot=False)
+
+    # print each final accuracy
+    for k,accuracies in all_accuracies.items():
+        print(f"k={k} accuracy={accuracies[-1]}")
+
+    # plot accuracies
+    make_plot(func=1,all_accuracies=all_accuracies)
+
+
+def test_predictor(history,predictor,plot=True):
+
+    if plot == True: 
+        print("======= testing predictor ======")
+
+    # initialize parameters
     correct = 0
     accuracies = []
 
@@ -118,9 +134,8 @@ def test_predictor(history,predictor):
         # otherwise, make prediction based on history
         else:
             # make history and query vectors
-            # import pdb; pdb.set_trace()
-            history_hv = predictor.encode_history(history[0:i])  
-            query_hv = predictor.make_query(history[0:i])
+            history_hv = predictor.encode_history(history[:i])  
+            query_hv = predictor.make_query(history[:i])
             
             # generate prediction and compare to actual 
             prediction = predictor.predict(history_hv,query_hv)
@@ -131,17 +146,38 @@ def test_predictor(history,predictor):
         if prediction == actual:
             correct += 1
 
-        if i > 0:
-            accuracy = float(correct)/i
-            accuracies.append(accuracy)
-            pbar.set_description("accuracy=%f" % accuracy)
+        accuracy = float(correct) / (i+1)
+        accuracies.append(accuracy)
+        pbar.set_description("accuracy=%f" % accuracy)
 
+    # plot accuracies 
+    if plot == True:
+        make_plot(func=0,accuracies=accuracies)
 
+        # print final accuracy
+        print(f"ACCURACY: {accuracy}")
+    else:
+        return accuracies
+        
+
+def make_plot(func=0,accuracies=[],all_accuracies={}):
     
-    # plot accuracies
-    # remember that you can label each plot
-    plt.plot(np.arange(len(history)-1),accuracies,color="red", linewidth=2.5)
-    
+    # one-line plot
+    if func == 0:
+        plt.plot(np.arange(len(accuracies)),accuracies,color="blue", linewidth=2.5)
+
+    # multi-line plot
+    elif func == 1:
+        # get colormaps
+        color = plt.get_cmap("plasma")
+        
+        # plot accuracies
+        for k,accuracies in all_accuracies.items():
+            plt.plot(np.arange(len(accuracies)),accuracies,label=f"k={k}",color=color( (k-3) / len(all_accuracies) ))
+
+        # show labels
+        plt.legend()
+
     # modify axis objects
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -154,9 +190,9 @@ def test_predictor(history,predictor):
     plt.ylabel("Accuracy")
     plt.grid(color='black', alpha=0.1)
     
+    # show plot
     plt.show()
-    print(f"ACCURACY: {accuracy}")
-        
+
 
 def debug_testing(predictor):
     # assume k=3
@@ -195,10 +231,13 @@ def debug_testing(predictor):
 
 def main():
     # initialize k-gram size
-    k = 8
+    k = 3
 
     # initialize data
     history,predictor = initialize(k)
+    
+    # test different k-gram sizes
+    #test_k_gram_sizes(history,predictor)
 
     # test predictor
     test_predictor(history,predictor)
