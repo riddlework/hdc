@@ -70,7 +70,7 @@ def initialize(k=3):
     # initialize data 
     HDC.SIZE = 10000
 
-    decisions = []
+    decisions = RevList() 
     with open("./data/traces/410185-dataset.txt","r") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         #decisions = [row["decision"] for row in csv_reader]
@@ -81,9 +81,6 @@ def initialize(k=3):
             # restrict amount of computation
             if len(decisions) >= 100:
                 break
-
-    # reverse decision array to get most recent decisions first
-    decisions.reverse()
 
     # initialize branch predictor
     predictor = branchPredictor(k)
