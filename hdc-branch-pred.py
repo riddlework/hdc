@@ -17,12 +17,11 @@ class branchPredictor:
 
         self.history = history
         self.history_vecs = self.list_to_vec(history)
-        self.unthresholded = []
 
 
     # convert list of decisions to list of representative vectors
     def list_to_vec(self,decision_list):
-        return [self.decisions.get(str(decision)) for decision in decision_list]
+        return np.array([self.decisions.get(str(decision)) for decision in decision_list])
     
 
     # create gram out of given list of decision vectors 
@@ -48,10 +47,8 @@ class branchPredictor:
     # create query vector from last k-1 items from memory
     def make_query(self,i):
 
-        lenh = len(self.history_vecs)
-
         # retrieve last k-1 items from history
-        query_vecs = self.history_vecs[lenh-self.k+1:lenh]
+        query_vecs = self.history_vecs[i-self.k+1:i]
 
         # encode run
         run = self.encode_run(query_vecs)
