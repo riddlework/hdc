@@ -4,12 +4,15 @@ import operator as op
 import numpy as np
 import tqdm
 import matplotlib.pyplot as plt
-
+import time
 from functools import reduce
 
 class HDC:
     SIZE = 10000
-    #np.random.seed(0)
+    # seed = int(time.time() * 1000) % (2**32-1)
+    seed = 89058065 # bad performance
+    np.random.seed(seed)
+    print(f"Seed: {seed}")
 
     @classmethod
     def rand_vec(cls):

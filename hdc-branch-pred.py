@@ -3,6 +3,11 @@ from rev_list import *
 import csv
 import tqdm
 import matplotlib.pyplot as plt
+from enum import Enum
+
+class encodingType(Enum):
+    RUNNING_BUNDLE = "RB"
+    BASELINE = "BL" 
 
 class branchPredictor:
     
@@ -15,10 +20,15 @@ class branchPredictor:
         self.decisions.add("0")
         self.decisions.add("1")
 
+        # initialize vector stores
         self.history = history
         self.history_vecs = self.list_to_vec(history)
+        self.grams = []
+        self.unthr_grams = np.zeros(HDC.SIZE)
+        self.num_grams = 0
 
-
+        self.encoding_type = encodingType.RUNNING_BUNDLE
+        
     # convert list of decisions to list of representative vectors
     def list_to_vec(self,decision_list):
         return np.array([self.decisions.get(str(decision)) for decision in decision_list])
@@ -28,11 +38,35 @@ class branchPredictor:
     def encode_run(self,decision_vecs):
         return HDC.bind_all([HDC.permute(decision_vecs[i],i) for i in range(len(decision_vecs))])
 
+    
+    def encode_history(self,i):
+        if self.encoding_type == encodingType.RUNNING_BUNDLE:
+            return self.encode_history_running_bundle(i)
+        else:
+            return self.encode_history_baseline(i)
+
 
     # assumes that history is long enough for k-gram
     # create history vector by encoding past branch decisions
-    def encode_history(self,i):
+    def encode_history_running_bundle(self,i):
+        # get vectors of current k-gram
+        run = self.history_vecs[i-self.k:i]
+
+        # encode run by binding
+        run = self.encode_run(run)
+
+        # add current gram to unthresholded grams
+        self.unthr_grams += run
+
+        # must keep track of number of grams thus far processed
+        self.num_grams += 1
+
+        # return thresholded run
+        return (self.unthr_grams > (self.num_grams / 2)).astype(int)
         
+        
+    # calculates entire sum every time
+    def encode_history_baseline(self,i):
         # create list of bound k-grams
         grams = []
         for j in range(i-self.k+1):
@@ -102,7 +136,7 @@ class branchPredictor:
 
         # plot accuracies 
         if plot == True:
-            make_plot(func=0,accuracies=accuracies)
+            make_plot(self,func=0,accuracies=accuracies)
 
             # print final accuracy
             print(f"ACCURACY: {accuracy}")
@@ -125,10 +159,6 @@ def initialize(k=3):
         for row in csv_reader:
             decisions.append(int(row["decision"]))
             
-            # restrict amount of computation
-            if len(decisions) >= 2500:
-                break
-
     # convert into numpy list
     decisions = np.array(decisions)
 
@@ -158,11 +188,11 @@ def test_k_gram_sizes(predictor,k_vals=[i for i in range(3,10)]):
         print(f"k={k} accuracy={accuracies[-1]}")
 
     # plot accuracies
-    make_plot(func=1,all_accuracies=all_accuracies)
+    make_plot(predictor,func=1,all_accuracies=all_accuracies)
         
 
 # generate plot based on data 
-def make_plot(func=0,accuracies=[],all_accuracies={}):
+def make_plot(predictor,func=0,accuracies=[],all_accuracies={}):
     
     # one-line plot
     if func == 0:
@@ -192,43 +222,11 @@ def make_plot(func=0,accuracies=[],all_accuracies={}):
     plt.ylabel("Accuracy")
     plt.grid(color='black', alpha=0.1)
     
+    # save plot
+    plt.savefig(f"accuracy_plot_{predictor.encoding_type.value}_{HDC.seed}.png")
+
     # show plot
     plt.show()
-
-
-def debug_testing(predictor):
-    # assume k=3
-    # y y n history
-    # y y query
-    # should return n
-
-    history = ["y","y","n"]
-    # reverse history to get most recent decisions first
-    reverse_history = history[::-1] 
-
-    # create history vector manually
-    history_vecs = []
-    for i in range(len(reverse_history)):
-        history_vec = predictor.decisions.get(reverse_history[i])
-        history_vecs.append(HDC.permute(history_vec,i))
-
-    history_hv = HDC.bind_all(history_vecs)
-
-    # create query vector manually
-    query_vecs = []
-    for i in range(1,len(reverse_history)):
-        query_vecs.append(HDC.permute(predictor.decisions.get(reverse_history[i]),i))
-
-    query_hv = HDC.bind_all(query_vecs)
-        
-
-    # make vectors using class methods
-    #history_hv = predictor.encode_history(reverse_history)
-    #query_hv = predictor.make_query(reverse_history)
-
-    # get prediction result
-    print(f"{predictor.decisions.wta(HDC.bind(history_hv,query_hv))}")
-    return
 
 
 def main():
@@ -245,7 +243,7 @@ def main():
     predictor.test()
 
     # debugg/testing simple code 
-    # debug_testing(predictor)
+    # debug_testing()
 
 
 if __name__ == "__main__":
