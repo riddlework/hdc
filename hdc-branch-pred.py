@@ -20,6 +20,8 @@ class branchPredictor:
         self.decisions.add("0")
         self.decisions.add("1")
 
+        # initialize 
+
         # initialize vector stores
         self.history = history
         self.history_vecs = self.list_to_vec(history)
@@ -223,7 +225,7 @@ def make_plot(predictor,func=0,accuracies=[],all_accuracies={}):
     plt.grid(color='black', alpha=0.1)
     
     # save plot
-    plt.savefig(f"accuracy_plot_{predictor.encoding_type.value}_{HDC.seed}.png")
+    plt.savefig(f"accuracy_plot_{predictor.encoding_type.value}.png")
 
     # show plot
     plt.show()
@@ -237,10 +239,10 @@ def main():
     predictor = initialize(k)
     
     # test different k-gram sizes
-    #test_k_gram_sizes(history,predictor)
+    test_k_gram_sizes(predictor)
 
     # test predictor
-    predictor.test()
+    # predictor.test()
 
     # debugg/testing simple code 
     # debug_testing()
