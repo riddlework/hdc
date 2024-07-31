@@ -239,10 +239,10 @@ def main():
     predictor = initialize(k)
     
     # test different k-gram sizes
-    test_k_gram_sizes(predictor)
+    # test_k_gram_sizes(predictor)
 
     # test predictor
-    # predictor.test()
+    predictor.test()
 
     # debugg/testing simple code 
     # debug_testing()
