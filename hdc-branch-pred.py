@@ -20,8 +20,6 @@ class branchPredictor:
         self.decisions.add("0")
         self.decisions.add("1")
 
-        # initialize 
-
         # initialize vector stores
         self.history = history
         self.history_vecs = self.list_to_vec(history)
@@ -31,6 +29,7 @@ class branchPredictor:
 
         self.encoding_type = encodingType.RUNNING_BUNDLE
         
+
     # convert list of decisions to list of representative vectors
     def list_to_vec(self,decision_list):
         return np.array([self.decisions.get(str(decision)) for decision in decision_list])
@@ -107,34 +106,38 @@ class branchPredictor:
         correct = 0
         accuracies = []
 
-        for i in (pbar := tqdm.tqdm(range(len(self.history)))):
+        with open("./data/traces/410185-dataset-results.txt", "w") as results_file:
 
-            # if history is not long enough for k-gram, make random prediction
-            if i < self.k:
-                rand_num = np.random.rand()
-                if rand_num < 0.5:
-                    prediction = 1 
+            for i in (pbar := tqdm.tqdm(range(len(self.history)))):
+
+                # if history is not long enough for k-gram, make random prediction
+                if i < self.k:
+                    rand_num = np.random.rand()
+                    if rand_num < 0.5:
+                        prediction = 1 
+                    else:
+                        prediction = 0 
+
+                # otherwise, make prediction based on history
                 else:
-                    prediction = 0 
+                    # make history and query vectors
+                    history_hv = self.encode_history(i)  
+                    query_hv = self.make_query(i)
+                    
+                    # generate prediction and compare to actual 
+                    prediction = self.predict(history_hv,query_hv)
 
-            # otherwise, make prediction based on history
-            else:
-                # make history and query vectors
-                history_hv = self.encode_history(i)  
-                query_hv = self.make_query(i)
-                
-                # generate prediction and compare to actual 
-                prediction = self.predict(history_hv,query_hv)
+                # update accuracy using actual decision
+                actual = self.history[i]
 
-            # update accuracy using actual decision
-            actual = self.history[i]
+                if prediction == actual:
+                    correct += 1
 
-            if prediction == actual:
-                correct += 1
+                accuracy = float(correct) / (i+1)
+                accuracies.append(accuracy)
+                pbar.set_description("accuracy=%f" % accuracy)
 
-            accuracy = float(correct) / (i+1)
-            accuracies.append(accuracy)
-            pbar.set_description("accuracy=%f" % accuracy)
+                results_file.write(f"410185,{prediction}\n")
 
         # plot accuracies 
         if plot == True:
@@ -155,11 +158,11 @@ def initialize(k=3):
     # initialize decisions
     decisions = []
     with open("./data/traces/410185-dataset.txt","r") as csv_file:
-        csv_reader = csv.DictReader(csv_file)
+        csv_reader = csv.reader(csv_file)
         #decisions = [row["decision"] for row in csv_reader]
 
         for row in csv_reader:
-            decisions.append(int(row["decision"]))
+            decisions.append(int(row[1]))
             
     # convert into numpy list
     decisions = np.array(decisions)
@@ -239,10 +242,10 @@ def main():
     predictor = initialize(k)
     
     # test different k-gram sizes
-    test_k_gram_sizes(predictor)
+    # test_k_gram_sizes(predictor)
 
     # test predictor
-    # predictor.test()
+    predictor.test()
 
     # debugg/testing simple code 
     # debug_testing()
